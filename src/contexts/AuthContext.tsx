@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "../../supabaseClient";
 
 interface User {
   id: string;
@@ -27,22 +27,80 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // This will be replaced with actual Supabase integration later
   useEffect(() => {
-    // Check for user session in localStorage (temporary solution)
-    const storedUser = localStorage.getItem("aivia_user");
+    // Check for existing session
+    const fetchSession = async () => {
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("Session error:", sessionError);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (sessionData?.session) {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', sessionData.session.user.id)
+            .single();
+            
+          if (userError || !userData) {
+            console.error("User data error:", userError);
+            setIsLoading(false);
+            return;
+          }
+          
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role as "Admin" | "User"
+          });
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    fetchSession();
     
-    setIsLoading(false);
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (!userError && userData) {
+            setUser({
+              id: userData.id,
+              email: userData.email,
+              name: userData.name,
+              role: userData.role as "Admin" | "User"
+            });
+          }
+        } else if (event === "SIGNED_OUT") {
+          setUser(null);
+        }
+      }
+    );
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock authentication - will be replaced with Supabase auth
+      // For development/testing, keep admin hardcoded credential
       if (email === "admin@aivia.com" && password === "admin123") {
         const adminUser = {
           id: "admin-1",
@@ -60,35 +118,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         
         navigate("/inbox");
-      } else if (email === "test@example.com" && password === "password") {
-        const regularUser = {
-          id: "user-1",
-          email: "test@example.com",
-          name: "Regular User",
-          role: "User" as const,
+        setIsLoading(false);
+        return;
+      }
+      
+      // Normal Supabase auth flow
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data.user) {
+        // Fetch additional user data from your users table
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (userError) {
+          throw userError;
+        }
+        
+        const userInfo = {
+          id: data.user.id,
+          email: data.user.email as string,
+          name: userData.name,
+          role: userData.role as "Admin" | "User"
         };
         
-        setUser(regularUser);
-        localStorage.setItem("aivia_user", JSON.stringify(regularUser));
+        setUser(userInfo);
         
         toast({
           title: "Login successful",
-          description: "Welcome to AIVIA-MBox",
+          description: `Welcome back, ${userData.name}`,
         });
         
         navigate("/inbox");
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password. Try admin@aivia.com / admin123 (admin) or test@example.com / password (regular user)",
-          variant: "destructive",
-        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
       toast({
         title: "Login failed",
-        description: "An error occurred during login",
+        description: error.message || "Invalid email or password.",
         variant: "destructive",
       });
     } finally {
@@ -96,14 +172,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("aivia_user");
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully",
-    });
-    navigate("/");
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      localStorage.removeItem("aivia_user");
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   // Helper properties

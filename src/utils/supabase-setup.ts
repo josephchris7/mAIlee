@@ -1,80 +1,149 @@
 
-// This file will be used for Supabase integration later
-// The functions below are placeholders that will be replaced with actual Supabase calls
+import { supabase } from '../../supabaseClient';
 
 export interface SupabaseConfig {
   url: string;
   anonKey: string;
 }
 
-// This function will be replaced with actual Supabase client initialization
-export const initializeSupabase = (config: SupabaseConfig) => {
-  console.log("Supabase will be initialized with:", config);
-  return {
-    auth: {
-      signIn: async (credentials: { email: string; password: string }) => {
-        console.log("Supabase auth signIn will use:", credentials);
-        // Will be implemented with actual Supabase
-        return Promise.resolve();
-      },
-      signOut: async () => {
-        console.log("Supabase auth signOut will be called");
-        // Will be implemented with actual Supabase
-        return Promise.resolve();
-      }
-    },
-    from: (table: string) => {
-      console.log(`Supabase query from ${table} will be executed`);
-      return {
-        select: () => ({
-          eq: () => ({
-            data: null,
-            error: null
-          })
-        }),
-        insert: () => ({
-          data: null,
-          error: null
-        }),
-        update: () => ({
-          match: () => ({
-            data: null,
-            error: null
-          })
-        })
-      };
-    }
-  };
-};
-
-// Placeholder for user management functions
+// User management functions
 export const userManagement = {
   createUser: async (userData: any) => {
-    console.log("Create user will be implemented with Supabase:", userData);
-    return { id: "new-user-id" };
+    try {
+      // First register the auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+      });
+      
+      if (authError) throw authError;
+      
+      // Then add the user to our users table with additional info
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{ 
+          id: authData.user?.id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role || 'User',
+          status: 'Active',
+          created_at: new Date(),
+        }]);
+      
+      if (error) throw error;
+      
+      return { id: authData.user?.id };
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
   },
+  
   updateUser: async (id: string, userData: any) => {
-    console.log(`Update user ${id} will be implemented with Supabase:`, userData);
-    return { id };
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update(userData)
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      return { id };
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
   },
+  
   deleteUser: async (id: string) => {
-    console.log(`Delete user ${id} will be implemented with Supabase`);
-    return true;
+    try {
+      // Only set the user to inactive rather than a hard delete
+      const { data, error } = await supabase
+        .from('users')
+        .update({ status: 'Inactive' })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
   },
+  
   listUsers: async () => {
-    console.log("List users will be implemented with Supabase");
-    return [];
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*');
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error listing users:', error);
+      return [];
+    }
   }
 };
 
-// Placeholder for email management functions
+// Email management functions
 export const emailManagement = {
   sendEmail: async (emailData: any) => {
-    console.log("Send email will be implemented with Supabase:", emailData);
-    return { id: "new-email-id" };
+    try {
+      const { data, error } = await supabase
+        .from('emails')
+        .insert([{
+          from_id: emailData.fromId,
+          to_email: emailData.to,
+          subject: emailData.subject,
+          content: emailData.content,
+          sent_at: new Date(),
+          status: 'sent',
+        }]);
+      
+      if (error) throw error;
+      
+      return { id: data?.[0]?.id };
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw error;
+    }
   },
+  
   fetchEmails: async (userId: string, folder: string) => {
-    console.log(`Fetch emails for user ${userId} from ${folder} will be implemented with Supabase`);
-    return [];
+    try {
+      let query = supabase
+        .from('emails')
+        .select('*, sender:from_id(name, email)');
+      
+      // Adjust query based on folder
+      switch (folder) {
+        case 'inbox':
+          query = query.eq('to_id', userId).eq('status', 'received');
+          break;
+        case 'sent':
+          query = query.eq('from_id', userId).eq('status', 'sent');
+          break;
+        case 'drafts':
+          query = query.eq('from_id', userId).eq('status', 'draft');
+          break;
+        case 'trash':
+          query = query.eq('to_id', userId).eq('status', 'deleted');
+          break;
+        default:
+          query = query.eq('to_id', userId).eq('status', 'received');
+      }
+      
+      const { data, error } = await query.order('sent_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching emails:', error);
+      return [];
+    }
   }
 };

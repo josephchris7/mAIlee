@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,13 +22,24 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, UserPlus } from "lucide-react";
+import { Search, UserPlus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { generateMockUsers } from "@/lib/mock-data";
+import { userManagement } from "@/utils/supabase-setup";
+import { supabase } from "../../supabaseClient";
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  created_at: string;
+}
 
 const AdminUsers = () => {
   const { toast } = useToast();
-  const [users, setUsers] = useState(generateMockUsers(5));
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [newUser, setNewUser] = useState({
     name: "",
@@ -38,42 +49,99 @@ const AdminUsers = () => {
   });
   const [isOpen, setIsOpen] = useState(false);
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load users",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // In a real app, this would send a request to your API
-    const newId = `user-${users.length + 1}`;
-    setUsers([
-      ...users,
-      {
-        id: newId,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        status: "Active",
-        created: new Date().toLocaleDateString()
-      }
-    ]);
-    
-    setNewUser({
-      name: "",
-      email: "",
-      password: "",
-      role: "User",
-    });
-    
-    setIsOpen(false);
-    
-    toast({
-      title: "User created",
-      description: `${newUser.name} has been added successfully`,
-    });
+    try {
+      await userManagement.createUser(newUser);
+      
+      setNewUser({
+        name: "",
+        email: "",
+        password: "",
+        role: "User",
+      });
+      
+      setIsOpen(false);
+      
+      toast({
+        title: "User created",
+        description: `${newUser.name} has been added successfully`,
+      });
+      
+      // Refresh the user list
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      await userManagement.updateUser(userId, { status: newStatus });
+      
+      // Update the local state
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, status: newStatus } : user
+      ));
+      
+      toast({
+        title: `User ${newStatus.toLowerCase()}`,
+        description: `User has been ${newStatus.toLowerCase()} successfully`,
+      });
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
   };
 
   return (
@@ -178,49 +246,72 @@ const AdminUsers = () => {
             </div>
           </div>
           <CardDescription>
-            Showing {filteredUsers.length} of {users.length} total users
+            {isLoading ? 
+              "Loading users..." : 
+              `Showing ${filteredUsers.length} of ${users.length} total users`
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    {user.role === "Admin" ? (
-                      <Badge className="bg-lavender-600">{user.role}</Badge>
-                    ) : (
-                      <Badge variant="outline">{user.role}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {user.status === "Active" ? (
-                      <Badge className="bg-green-500">{user.status}</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-mailgray-500">{user.status}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>{user.created}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">Edit</Button>
-                    <Button variant="ghost" size="sm" className="text-red-500">Disable</Button>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="size-8 rounded-full border-4 border-transparent border-t-primary animate-spin"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        {user.role === "Admin" ? (
+                          <Badge className="bg-lavender-600">{user.role}</Badge>
+                        ) : (
+                          <Badge variant="outline">{user.role}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {user.status === "Active" ? (
+                          <Badge className="bg-green-500">{user.status}</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-mailgray-500">{user.status}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{formatDate(user.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleToggleUserStatus(user.id, user.status)}
+                          className={user.status === 'Active' ? "text-red-500" : "text-green-500"}
+                        >
+                          {user.status === 'Active' ? 'Disable' : 'Enable'}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
