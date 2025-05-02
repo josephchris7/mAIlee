@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,33 +7,68 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SearchIcon, RefreshCw, Inbox as InboxIcon, Star, StarOff } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { generateMockEmails } from "@/lib/mock-data";
+import { emailService } from "@/services/emailService";
+import { formatDistanceToNow } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Inbox = () => {
   const { toast } = useToast();
-  const [emails, setEmails] = useState(generateMockEmails(15));
+  const { user } = useAuth();
+  const [emails, setEmails] = useState<any[]>([]);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   
-  const filteredEmails = emails.filter(email => 
+  // Format and filter emails 
+  const formattedEmails = emails.map(email => ({
+    id: email.id,
+    from: email.sender?.name || email.sender?.email || 'Unknown',
+    fromEmail: email.sender?.email || '',
+    avatar: null, // Could implement user avatars in the future
+    subject: email.subject || '(No subject)',
+    content: email.body || '',
+    time: email.created_at ? formatDistanceToNow(new Date(email.created_at), { addSuffix: true }) : 'Unknown',
+    unread: !email.is_read,
+    important: email.is_starred
+  }));
+  
+  const filteredEmails = formattedEmails.filter(email => 
     email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
     email.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
     email.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
+  useEffect(() => {
+    fetchEmails();
+  }, []);
+  
+  const fetchEmails = async () => {
+    setIsLoading(true);
+    try {
+      const inboxEmails = await emailService.fetchEmails('inbox');
+      setEmails(inboxEmails);
+    } catch (error) {
+      console.error("Error fetching emails:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch emails. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      const newEmails = generateMockEmails(2);
-      setEmails([...newEmails, ...emails]);
+    fetchEmails().finally(() => {
       setIsRefreshing(false);
-      
       toast({
         title: "Inbox refreshed",
-        description: `${newEmails.length} new messages received`,
+        description: "Your inbox has been refreshed",
       });
-    }, 1000);
+    });
   };
   
   const toggleEmailSelection = (id: string) => {
@@ -44,11 +79,32 @@ const Inbox = () => {
     );
   };
   
-  const toggleImportant = (id: string, event: React.MouseEvent) => {
+  const toggleImportant = async (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    setEmails(emails.map(email => 
-      email.id === id ? { ...email, important: !email.important } : email
-    ));
+    
+    // Find the email and toggle its important status
+    const email = emails.find(email => email.id === id);
+    if (!email) return;
+    
+    const newImportantStatus = !email.is_starred;
+    
+    try {
+      const success = await emailService.toggleStar(id, newImportantStatus);
+      
+      if (success) {
+        // Update the local state
+        setEmails(emails.map(email => 
+          email.id === id ? { ...email, is_starred: newImportantStatus } : email
+        ));
+      }
+    } catch (error) {
+      console.error("Error toggling importance:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update message status.",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleSelectAll = () => {
@@ -59,24 +115,41 @@ const Inbox = () => {
     }
   };
   
-  const markAsRead = () => {
+  const markAsRead = async () => {
     if (selectedEmails.length === 0) return;
     
-    setEmails(emails.map(email => 
-      selectedEmails.includes(email.id) ? { ...email, unread: false } : email
-    ));
-    
-    toast({
-      title: "Marked as read",
-      description: `${selectedEmails.length} emails marked as read`,
-    });
-    
-    setSelectedEmails([]);
+    try {
+      // Update all selected emails to read status
+      for (const emailId of selectedEmails) {
+        await emailService.markAsRead(emailId, true);
+      }
+      
+      // Update local state
+      setEmails(emails.map(email => 
+        selectedEmails.includes(email.id) ? { ...email, is_read: true } : email
+      ));
+      
+      toast({
+        title: "Marked as read",
+        description: `${selectedEmails.length} emails marked as read`,
+      });
+      
+      setSelectedEmails([]);
+    } catch (error) {
+      console.error("Error marking emails as read:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update message status.",
+        variant: "destructive",
+      });
+    }
   };
   
-  const moveToTrash = () => {
+  const moveToTrash = async () => {
     if (selectedEmails.length === 0) return;
     
+    // In a full implementation, this would update a status field in the database
+    // For now, we're just removing them from the local state
     setEmails(emails.filter(email => !selectedEmails.includes(email.id)));
     
     toast({
@@ -85,6 +158,23 @@ const Inbox = () => {
     });
     
     setSelectedEmails([]);
+  };
+
+  const openEmail = async (emailId: string) => {
+    // Mark as read when opened
+    try {
+      await emailService.markAsRead(emailId, true);
+      
+      // Update local state
+      setEmails(emails.map(email => 
+        email.id === emailId ? { ...email, is_read: true } : email
+      ));
+      
+      // In a full implementation, this would open a detail view of the email
+      console.log("Open email", emailId);
+    } catch (error) {
+      console.error("Error marking email as read:", error);
+    }
   };
 
   return (
@@ -142,7 +232,11 @@ const Inbox = () => {
       
       {/* Email list */}
       <div className="flex-1 overflow-auto">
-        {filteredEmails.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <RefreshCw className="size-8 animate-spin text-lavender-500" />
+          </div>
+        ) : filteredEmails.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-mailgray-500">
             <InboxIcon className="size-16 text-lavender-300 mb-4" />
             <h3 className="text-xl font-medium">Your inbox is empty</h3>
@@ -153,8 +247,8 @@ const Inbox = () => {
             {filteredEmails.map((email) => (
               <div 
                 key={email.id} 
-                className={`mail-item ${email.unread ? 'unread' : ''} flex items-center gap-3`}
-                onClick={() => console.log("Open email", email.id)}
+                className={`mail-item ${email.unread ? 'bg-blue-50 dark:bg-blue-900/10' : ''} flex items-center gap-3 p-4 hover:bg-lavender-50 dark:hover:bg-lavender-900/10 cursor-pointer`}
+                onClick={() => openEmail(email.id)}
               >
                 <div className="flex items-center gap-3 pr-3">
                   <Checkbox 
@@ -185,12 +279,16 @@ const Inbox = () => {
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="font-medium truncate">{email.from}</div>
+                    <div className={`font-medium truncate ${email.unread ? 'font-semibold' : ''}`}>
+                      {email.from}
+                    </div>
                     <div className="text-xs text-mailgray-500">{email.time}</div>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div className="truncate pr-4">{email.subject}</div>
+                    <div className={`truncate pr-4 ${email.unread ? 'font-semibold' : ''}`}>
+                      {email.subject}
+                    </div>
                     {email.unread && (
                       <Badge variant="outline" className="bg-lavender-100 text-lavender-700 dark:bg-lavender-900 dark:text-lavender-300 rounded-full">
                         New

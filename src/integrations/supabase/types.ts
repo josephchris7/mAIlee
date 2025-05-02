@@ -41,23 +41,83 @@ export type Database = {
           },
         ]
       }
+      mailbox_preferences: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          id: string
+          reply_to: string | null
+          signature: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          reply_to?: string | null
+          signature?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          reply_to?: string | null
+          signature?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mailbox_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       mailboxes: {
         Row: {
           created_at: string | null
           id: string
+          is_default: boolean | null
           name: string
+          settings: Json | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
+          is_default?: boolean | null
           name: string
+          settings?: Json | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
+          is_default?: boolean | null
           name?: string
+          settings?: Json | null
           user_id?: string | null
         }
         Relationships: [

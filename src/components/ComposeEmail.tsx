@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,13 +15,19 @@ import { useToast } from "@/components/ui/use-toast";
 import { CalendarIcon, Send, Trash, Sparkles } from "lucide-react";
 import AIWritingAssistant from "./AIWritingAssistant";
 import ScheduleCalendar from "./ScheduleCalendar";
+import { emailService, EmailPreferences } from "@/services/emailService";
 
 interface ComposeEmailProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  replyToEmail?: any; // Optional prop for replying to an existing email
 }
 
-const ComposeEmail: React.FC<ComposeEmailProps> = ({ open, onOpenChange }) => {
+const ComposeEmail: React.FC<ComposeEmailProps> = ({ 
+  open, 
+  onOpenChange,
+  replyToEmail
+}) => {
   const [to, setTo] = useState("");
   const [cc, setCc] = useState("");
   const [bcc, setBcc] = useState("");
@@ -30,10 +36,31 @@ const ComposeEmail: React.FC<ComposeEmailProps> = ({ open, onOpenChange }) => {
   const [showCcBcc, setShowCcBcc] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [userPrefs, setUserPrefs] = useState<EmailPreferences>({});
   
   const { toast } = useToast();
 
-  const handleSend = () => {
+  useEffect(() => {
+    // Fetch user email preferences when component mounts
+    const fetchPreferences = async () => {
+      const preferences = await emailService.getUserPreferences();
+      setUserPrefs(preferences);
+    };
+    
+    if (open) {
+      fetchPreferences();
+      
+      // Set reply details if replying to an email
+      if (replyToEmail) {
+        setTo(replyToEmail.from?.email || "");
+        setSubject(replyToEmail.subject ? `Re: ${replyToEmail.subject}` : "");
+        setBody(`\n\n-------- Original Message --------\n${replyToEmail.content || ""}`);
+      }
+    }
+  }, [open, replyToEmail]);
+
+  const handleSend = async () => {
     if (!to) {
       toast({
         title: "Missing recipient",
@@ -43,15 +70,50 @@ const ComposeEmail: React.FC<ComposeEmailProps> = ({ open, onOpenChange }) => {
       return;
     }
 
-    // In a real app, this would send the email via an API
-    toast({
-      title: "Email sent",
-      description: `Your email to ${to} has been sent successfully.`,
-    });
-    
-    // Reset form and close dialog
-    resetForm();
-    onOpenChange(false);
+    setIsSending(true);
+    try {
+      // Prepare CC and BCC recipients
+      const ccRecipients = cc ? cc.split(',').map(email => email.trim()).filter(Boolean) : [];
+      const bccRecipients = bcc ? bcc.split(',').map(email => email.trim()).filter(Boolean) : [];
+      
+      // Create full email body with signature if available
+      const fullBody = userPrefs.signature 
+        ? `${body}\n\n${userPrefs.signature}` 
+        : body;
+      
+      const result = await emailService.sendEmail({
+        to: to.split(',').map(email => email.trim()).filter(Boolean),
+        cc: ccRecipients.length > 0 ? ccRecipients : undefined,
+        bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
+        subject,
+        body: fullBody,
+      });
+      
+      if (result.success) {
+        toast({
+          title: "Email sent",
+          description: `Your email to ${to} has been sent successfully.`,
+        });
+        
+        // Reset form and close dialog
+        resetForm();
+        onOpenChange(false);
+      } else {
+        toast({
+          title: "Failed to send email",
+          description: result.error || "An unknown error occurred",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while sending the email",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleDiscard = () => {
@@ -177,13 +239,13 @@ const ComposeEmail: React.FC<ComposeEmailProps> = ({ open, onOpenChange }) => {
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={handleDiscard}>
+            <Button variant="outline" onClick={handleDiscard} disabled={isSending}>
               <Trash className="mr-2 h-4 w-4" />
               Discard
             </Button>
-            <Button onClick={handleSend}>
+            <Button onClick={handleSend} disabled={isSending}>
               <Send className="mr-2 h-4 w-4" />
-              Send
+              {isSending ? "Sending..." : "Send"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AiviaLogo from "@/components/AiviaLogo";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import ComposeEmail from "@/components/ComposeEmail";
+import EmailSettings from "@/components/EmailSettings";
 
 const MainLayout = () => {
   const navigate = useNavigate();
@@ -148,6 +148,7 @@ const MainLayout = () => {
           </div>
           
           <div className="flex items-center gap-2">
+            <EmailSettings />
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {theme === 'light' ? <Moon className="size-5" /> : <Sun className="size-5" />}
             </Button>
