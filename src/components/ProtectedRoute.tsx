@@ -11,7 +11,12 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="h-screen w-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-muted">
+        <div className="size-16 rounded-full border-4 border-transparent border-t-primary animate-spin mb-4"></div>
+        <p className="text-lg text-primary">Loading...</p>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {

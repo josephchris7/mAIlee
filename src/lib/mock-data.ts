@@ -1,4 +1,3 @@
-
 interface Email {
   id: string;
   from: string;
@@ -9,6 +8,15 @@ interface Email {
   unread: boolean;
   important: boolean;
   avatar?: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  created: string;
 }
 
 // Sample names for email generation
