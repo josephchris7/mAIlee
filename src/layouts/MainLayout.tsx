@@ -2,15 +2,6 @@
 import React, { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { 
   Inbox, 
@@ -19,7 +10,6 @@ import {
   Trash, 
   Star, 
   Archive, 
-  LogOut, 
   Moon, 
   Sun, 
   Menu, 
@@ -29,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import AiviaLogo from "@/components/AiviaLogo";
+import ProfileAvatar from "@/components/ProfileAvatar";
 
 const MainLayout = () => {
   const navigate = useNavigate();
@@ -82,7 +73,7 @@ const MainLayout = () => {
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <AiviaLogo className="size-10" />
-              {sidebarOpen && <span className="font-bold text-lg text-lavender-700 dark:text-lavender-300">AIVIA-MBox</span>}
+              {sidebarOpen && <span className="font-bold text-lg text-aivia-lavender dark:text-aivia-lavender">AIVIA-MBox</span>}
             </div>
             <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
               <X className="size-5" />
@@ -93,13 +84,13 @@ const MainLayout = () => {
           <div className="px-3 py-2">
             <Button className={`
               ${sidebarOpen ? 'w-full' : 'w-14 h-14 rounded-full mx-auto'} 
-              bg-lavender-600 hover:bg-lavender-700 text-white flex items-center justify-center
+              bg-aivia-lavender hover:bg-aivia-lavender/80 text-white dark:text-primary-foreground flex items-center justify-center
             `}>
               {sidebarOpen ? 'Compose' : '+'}
             </Button>
           </div>
           
-          <Separator className="my-2 bg-lavender-100 dark:bg-mailgray-800" />
+          <Separator className="my-2 bg-aivia-lavender/20 dark:bg-aivia-lavender/10" />
           
           {/* Navigation */}
           <div className="flex-1 overflow-auto py-2">
@@ -117,8 +108,8 @@ const MainLayout = () => {
               
               {/* Admin section - only visible to admin users */}
               {isAdmin && sidebarOpen && (
-                <div className="pt-4 mt-4 border-t border-lavender-100 dark:border-mailgray-800">
-                  <div className="text-xs uppercase text-mailgray-500 dark:text-mailgray-400 font-semibold px-4 mb-2">
+                <div className="pt-4 mt-4 border-t border-aivia-lavender/20 dark:border-aivia-lavender/10">
+                  <div className="text-xs uppercase text-aivia-gray dark:text-aivia-gray font-semibold px-4 mb-2">
                     Admin
                   </div>
                   {adminItems.map((item) => (
@@ -146,7 +137,7 @@ const MainLayout = () => {
             <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden mr-2">
               <Menu className="size-5" />
             </Button>
-            <h1 className="text-xl font-semibold text-lavender-700 dark:text-lavender-300">
+            <h1 className="text-xl font-semibold text-aivia-lavender dark:text-aivia-lavender">
               {location.pathname.substring(1).charAt(0).toUpperCase() + location.pathname.substring(1).slice(1)}
             </h1>
           </div>
@@ -156,33 +147,7 @@ const MainLayout = () => {
               {theme === 'light' ? <Moon className="size-5" /> : <Sun className="size-5" />}
             </Button>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative size-9 rounded-full">
-                  <Avatar className="size-9">
-                    <AvatarImage src="/placeholder.svg" alt="User" />
-                    <AvatarFallback className="bg-lavender-200 text-lavender-700">
-                      {user?.name?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 cursor-pointer">
-                  <LogOut className="mr-2 size-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <ProfileAvatar onLogout={handleLogout} />
           </div>
         </header>
 

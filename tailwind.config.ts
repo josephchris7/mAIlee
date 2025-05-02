@@ -64,7 +64,7 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				aivia: {
-					lavender: '#ac8eb8',
+					lavender: '#c0adf0',
 					gray: '#8f8d90',
 				},
 			},

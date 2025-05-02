@@ -17,10 +17,10 @@ const Sent = () => {
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="bg-white dark:bg-mailgray-900 shadow-sm p-3 flex items-center justify-between gap-2">
-        <h2 className="text-lg font-medium text-lavender-700 dark:text-lavender-300">Sent Items</h2>
+        <h2 className="text-lg font-medium text-aivia-lavender dark:text-aivia-lavender">Sent Items</h2>
         
         <div className="relative flex-1 max-w-md">
-          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-mailgray-400 size-4" />
+          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-aivia-gray size-4" />
           <Input placeholder="Search sent emails" className="pl-10" />
         </div>
       </div>
@@ -28,13 +28,13 @@ const Sent = () => {
       {/* Email list */}
       <div className="flex-1 overflow-auto">
         {sentEmails.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-mailgray-500">
-            <SendIcon className="size-16 text-lavender-300 mb-4" />
+          <div className="flex flex-col items-center justify-center h-full text-aivia-gray">
+            <SendIcon className="size-16 text-aivia-lavender/50 mb-4" />
             <h3 className="text-xl font-medium">No sent emails</h3>
             <p>When you send emails, they'll appear here</p>
           </div>
         ) : (
-          <div className="divide-y divide-lavender-100 dark:divide-mailgray-800">
+          <div className="divide-y divide-aivia-lavender/20 dark:divide-aivia-lavender/10">
             {sentEmails.map((email) => (
               <div 
                 key={email.id} 
@@ -42,7 +42,7 @@ const Sent = () => {
               >
                 <Avatar className="size-10">
                   <AvatarImage src="/placeholder.svg" />
-                  <AvatarFallback className="bg-lavender-200 text-lavender-700">
+                  <AvatarFallback className="bg-aivia-lavender/20 text-aivia-lavender dark:bg-aivia-lavender/30 dark:text-primary-foreground">
                     Me
                   </AvatarFallback>
                 </Avatar>
@@ -50,12 +50,12 @@ const Sent = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <div className="font-medium truncate">To: {email.to}</div>
-                    <div className="text-xs text-mailgray-500">{email.time}</div>
+                    <div className="text-xs text-aivia-gray">{email.time}</div>
                   </div>
                   
                   <div className="truncate pr-4 font-medium">{email.subject}</div>
                   
-                  <div className="text-sm text-mailgray-500 truncate">
+                  <div className="text-sm text-aivia-gray truncate">
                     {email.content}
                   </div>
                 </div>
