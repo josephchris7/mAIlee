@@ -10,29 +10,44 @@ export interface SupabaseConfig {
 export const userManagement = {
   createUser: async (userData: any) => {
     try {
+      console.log("Creating user with data:", userData);
+      
       // First register the auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
       });
       
-      if (authError) throw authError;
+      if (authError) {
+        console.error("Auth error:", authError);
+        throw authError;
+      }
+      
+      if (!authData.user?.id) {
+        throw new Error("User creation failed. No user ID returned.");
+      }
+      
+      console.log("Auth user created:", authData.user.id);
       
       // Then add the user to our users table with additional info
       const { data, error } = await supabase
         .from('users')
         .insert([{ 
-          id: authData.user?.id,
+          id: authData.user.id,
           name: userData.name,
           email: userData.email,
           role: userData.role || 'User',
           status: 'Active',
-          created_at: new Date(),
+          created_at: new Date().toISOString(),
         }]);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Database error:", error);
+        throw error;
+      }
       
-      return { id: authData.user?.id };
+      console.log("User created successfully");
+      return { id: authData.user.id };
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;

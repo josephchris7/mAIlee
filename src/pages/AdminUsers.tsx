@@ -22,7 +22,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus } from "lucide-react";
+import { Search, UserPlus, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { userManagement } from "@/utils/supabase-setup";
 import { supabase } from "../../supabaseClient";
@@ -40,6 +40,7 @@ const AdminUsers = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [newUser, setNewUser] = useState({
     name: "",
@@ -48,6 +49,11 @@ const AdminUsers = () => {
     role: "User",
   });
   const [isOpen, setIsOpen] = useState(false);
+  const [formErrors, setFormErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -82,8 +88,41 @@ const AdminUsers = () => {
     user.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
+  const validateForm = () => {
+    const errors = {
+      name: "",
+      email: "",
+      password: "",
+    };
+    
+    if (!newUser.name.trim()) {
+      errors.name = "Name is required";
+    }
+    
+    if (!newUser.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^\S+@\S+\.\S+$/.test(newUser.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+    
+    if (!newUser.password.trim()) {
+      errors.password = "Password is required";
+    } else if (newUser.password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+    }
+    
+    setFormErrors(errors);
+    return !errors.name && !errors.email && !errors.password;
+  };
+  
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsCreating(true);
     
     try {
       await userManagement.createUser(newUser);
@@ -111,6 +150,8 @@ const AdminUsers = () => {
         description: error.message || "Failed to create user",
         variant: "destructive",
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -178,8 +219,11 @@ const AdminUsers = () => {
                     value={newUser.name}
                     onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
                     placeholder="John Doe"
-                    required
+                    className={formErrors.name ? "border-red-500" : ""}
                   />
+                  {formErrors.name && (
+                    <p className="text-xs text-red-500">{formErrors.name}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -189,8 +233,11 @@ const AdminUsers = () => {
                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                     placeholder="john.doe@yourcompany.com"
                     type="email"
-                    required
+                    className={formErrors.email ? "border-red-500" : ""}
                   />
+                  {formErrors.email && (
+                    <p className="text-xs text-red-500">{formErrors.email}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Initial Password</Label>
@@ -200,8 +247,11 @@ const AdminUsers = () => {
                     onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                     type="password"
                     placeholder="••••••••"
-                    required
+                    className={formErrors.password ? "border-red-500" : ""}
                   />
+                  {formErrors.password && (
+                    <p className="text-xs text-red-500">{formErrors.password}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Role</Label>
@@ -209,8 +259,7 @@ const AdminUsers = () => {
                     id="role"
                     value={newUser.role}
                     onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                    className="w-full px-3 py-2 border border-lavender-200 rounded-md"
-                    required
+                    className="w-full px-3 py-2 border border-lavender-200 rounded-md dark:bg-background dark:border-lavender-800"
                   >
                     <option value="User">User</option>
                     <option value="Admin">Admin</option>
@@ -222,8 +271,19 @@ const AdminUsers = () => {
                 <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-lavender-600 hover:bg-lavender-700">
-                  Create User
+                <Button 
+                  type="submit" 
+                  className="bg-lavender-600 hover:bg-lavender-700"
+                  disabled={isCreating}
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create User"
+                  )}
                 </Button>
               </DialogFooter>
             </form>
