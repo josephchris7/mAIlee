@@ -9,6 +9,7 @@ import AiviaLogo from "@/components/AiviaLogo";
 
 const Login = () => {
   const { login, isLoading } = useAuth();
+  const [loginInProgress, setLoginInProgress] = useState(false);
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
@@ -23,7 +24,14 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(credentials.email, credentials.password);
+    setLoginInProgress(true);
+    try {
+      await login(credentials.email, credentials.password);
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoginInProgress(false);
+    }
   };
 
   return (
@@ -72,9 +80,9 @@ const Login = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-to-r from-aivia-deep-purple to-aivia-medium-purple hover:from-aivia-medium-purple hover:to-aivia-deep-purple transition-all duration-300 border-none text-white"
-                disabled={isLoading}
+                disabled={loginInProgress}
               >
-                {isLoading ? "Authenticating..." : "Sign In"}
+                {loginInProgress ? "Authenticating..." : "Sign In"}
               </Button>
             </div>
           </form>
