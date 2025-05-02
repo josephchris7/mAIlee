@@ -27,6 +27,18 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ onLogout }) => {
   // Maximum file size: 1MB
   const MAX_FILE_SIZE = 1 * 1024 * 1024; 
   
+  // Get user initials for the avatar fallback
+  const getUserInitials = (): string => {
+    if (!user?.name) return 'U';
+    
+    const nameParts = user.name.split(' ');
+    if (nameParts.length === 1) {
+      return nameParts[0].charAt(0).toUpperCase();
+    }
+    
+    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
+  };
+  
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -93,7 +105,7 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ onLogout }) => {
           <Avatar className="size-9">
             <AvatarImage src={avatarSrc || "/placeholder.svg"} alt={user?.name || 'User'} />
             <AvatarFallback className="bg-primary/20 text-primary-foreground dark:bg-primary/30 dark:text-primary-foreground">
-              {user?.name?.charAt(0) || 'U'}
+              {getUserInitials()}
             </AvatarFallback>
           </Avatar>
         </Button>
