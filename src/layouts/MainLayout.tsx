@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import AiviaLogo from "@/components/AiviaLogo";
 import ProfileAvatar from "@/components/ProfileAvatar";
+import ComposeEmail from "@/components/ComposeEmail";
 
 const MainLayout = () => {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ const MainLayout = () => {
   const { user, logout, isAdmin } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
   
   const menuItems = [
     { title: "Inbox", icon: <Inbox className="size-5" />, path: "/inbox" },
@@ -82,10 +84,13 @@ const MainLayout = () => {
           
           {/* Compose button */}
           <div className="px-3 py-2">
-            <Button className={`
-              ${sidebarOpen ? 'w-full' : 'w-14 h-14 rounded-full mx-auto'} 
-              bg-aivia-medium-purple hover:bg-aivia-deep-purple text-white dark:text-white flex items-center justify-center
-            `}>
+            <Button 
+              className={`
+                ${sidebarOpen ? 'w-full' : 'w-14 h-14 rounded-full mx-auto'} 
+                bg-aivia-medium-purple hover:bg-aivia-deep-purple text-white dark:text-white flex items-center justify-center
+              `}
+              onClick={() => setIsComposeOpen(true)}
+            >
               {sidebarOpen ? 'Compose' : '+'}
             </Button>
           </div>
@@ -156,6 +161,9 @@ const MainLayout = () => {
           <Outlet />
         </main>
       </div>
+      
+      {/* Compose Email Dialog */}
+      <ComposeEmail open={isComposeOpen} onOpenChange={setIsComposeOpen} />
     </div>
   );
 };
