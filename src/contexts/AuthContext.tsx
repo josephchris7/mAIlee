@@ -1,7 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 
 interface User {
   id: string;
@@ -40,24 +41,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         if (sessionData?.session) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', sessionData.session.user.id)
-            .single();
-            
-          if (userError || !userData) {
-            console.error("User data error:", userError);
-            setIsLoading(false);
-            return;
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', sessionData.session.user.id)
+              .maybeSingle();
+              
+            if (userData) {
+              setUser({
+                id: userData.id,
+                email: userData.email,
+                name: userData.name || sessionData.session.user.email?.split('@')[0] || 'User',
+                role: userData.role as "Admin" | "User" || "User"
+              });
+            } else {
+              console.log("No matching user found in users table. Creating one...");
+              // Create a user record if it doesn't exist
+              const newUser = {
+                id: sessionData.session.user.id,
+                email: sessionData.session.user.email || '',
+                name: sessionData.session.user.email?.split('@')[0] || 'User',
+                role: "User"
+              };
+              
+              const { error: insertError } = await supabase
+                .from('users')
+                .insert([newUser]);
+                
+              if (insertError) {
+                console.error("Error creating user record:", insertError);
+              } else {
+                setUser(newUser);
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching user data:", error);
           }
-          
-          setUser({
-            id: userData.id,
-            email: userData.email,
-            name: userData.name,
-            role: userData.role as "Admin" | "User"
-          });
         }
       } catch (error) {
         console.error("Auth check error:", error);
@@ -72,19 +92,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_IN" && session) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (!userError && userData) {
-            setUser({
-              id: userData.id,
-              email: userData.email,
-              name: userData.name,
-              role: userData.role as "Admin" | "User"
-            });
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+              
+            if (userData) {
+              setUser({
+                id: userData.id,
+                email: userData.email,
+                name: userData.name || session.user.email?.split('@')[0] || 'User',
+                role: userData.role as "Admin" | "User" || "User"
+              });
+            } else {
+              console.log("No matching user found in users table during auth change. Creating one...");
+              // Create a user record if it doesn't exist
+              const newUser = {
+                id: session.user.id,
+                email: session.user.email || '',
+                name: session.user.email?.split('@')[0] || 'User',
+                role: "User"
+              };
+              
+              const { error: insertError } = await supabase
+                .from('users')
+                .insert([newUser]);
+                
+              if (insertError) {
+                console.error("Error creating user record:", insertError);
+              } else {
+                setUser(newUser);
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching user data on auth change:", error);
           }
         } else if (event === "SIGNED_OUT") {
           setUser(null);
@@ -133,32 +176,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (data.user) {
-        // Fetch additional user data from your users table
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-        
-        if (userError) {
-          throw userError;
+        try {
+          // Fetch additional user data from your users table
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', data.user.id)
+            .maybeSingle();
+          
+          let userInfo;
+          
+          if (userError || !userData) {
+            console.log("User authenticated but not found in users table. Creating entry...");
+            // Create user in the users table if they don't exist
+            const newUser = {
+              id: data.user.id,
+              email: data.user.email as string,
+              name: data.user.email?.split('@')[0] || 'User',
+              role: "User" as "Admin" | "User"
+            };
+            
+            const { error: insertError } = await supabase
+              .from('users')
+              .insert([newUser]);
+              
+            if (insertError) {
+              console.error("Error creating user record:", insertError);
+              throw insertError;
+            }
+            
+            userInfo = newUser;
+          } else {
+            userInfo = {
+              id: data.user.id,
+              email: data.user.email as string,
+              name: userData.name || data.user.email?.split('@')[0] || 'User',
+              role: userData.role as "Admin" | "User" || "User"
+            };
+          }
+          
+          setUser(userInfo);
+          
+          toast({
+            title: "Login successful",
+            description: `Welcome back, ${userInfo.name}`,
+          });
+          
+          navigate("/inbox");
+        } catch (error: any) {
+          console.error("Error handling user data:", error);
+          toast({
+            title: "Login error",
+            description: "Successfully authenticated but couldn't retrieve user data.",
+            variant: "destructive",
+          });
         }
-        
-        const userInfo = {
-          id: data.user.id,
-          email: data.user.email as string,
-          name: userData.name,
-          role: userData.role as "Admin" | "User"
-        };
-        
-        setUser(userInfo);
-        
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${userData.name}`,
-        });
-        
-        navigate("/inbox");
       }
     } catch (error: any) {
       console.error("Login error:", error);
