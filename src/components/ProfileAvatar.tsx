@@ -24,6 +24,9 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ onLogout }) => {
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
+  // Maximum file size: 1MB
+  const MAX_FILE_SIZE = 1 * 1024 * 1024; 
+  
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -41,11 +44,11 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ onLogout }) => {
       return;
     }
     
-    // Check file size (limit to 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Check file size (limit to 1MB)
+    if (file.size > MAX_FILE_SIZE) {
       toast({
         title: "File too large",
-        description: "Please upload an image smaller than 5MB",
+        description: "Please upload an image smaller than 1MB",
         variant: "destructive",
       });
       setIsUploading(false);
@@ -59,9 +62,19 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ onLogout }) => {
       setIsUploading(false);
       toast({
         title: "Profile photo updated",
-        description: "Your profile photo has been updated successfully",
+        description: "Your profile photo has been uploaded successfully",
       });
     };
+    
+    reader.onerror = () => {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload your profile photo. Please try again.",
+        variant: "destructive",
+      });
+      setIsUploading(false);
+    };
+    
     reader.readAsDataURL(file);
   };
   

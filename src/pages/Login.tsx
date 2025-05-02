@@ -79,14 +79,6 @@ const Login = () => {
             </div>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col items-center">
-          <div className="text-xs text-muted-foreground">
-            Admin: admin@aivia.com / admin123
-          </div>
-          <div className="text-xs text-muted-foreground">
-            User: test@example.com / password
-          </div>
-        </CardFooter>
       </Card>
     </div>
   );
