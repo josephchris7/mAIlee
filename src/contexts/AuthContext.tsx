@@ -53,7 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 id: userData.id,
                 email: userData.email,
                 name: userData.name || sessionData.session.user.email?.split('@')[0] || 'User',
-                role: userData.role as "Admin" | "User" || "User"
+                // Add a default "User" role if it's missing in the database
+                role: (userData.role as "Admin" | "User") || "User"
               });
             } else {
               console.log("No matching user found in users table. Creating one...");
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 id: sessionData.session.user.id,
                 email: sessionData.session.user.email || '',
                 name: sessionData.session.user.email?.split('@')[0] || 'User',
-                role: "User"
+                role: "User" as const
               };
               
               const { error: insertError } = await supabase
@@ -104,7 +105,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 id: userData.id,
                 email: userData.email,
                 name: userData.name || session.user.email?.split('@')[0] || 'User',
-                role: userData.role as "Admin" | "User" || "User"
+                // Add a default "User" role if it's missing in the database
+                role: (userData.role as "Admin" | "User") || "User"
               });
             } else {
               console.log("No matching user found in users table during auth change. Creating one...");
@@ -113,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 id: session.user.id,
                 email: session.user.email || '',
                 name: session.user.email?.split('@')[0] || 'User',
-                role: "User"
+                role: "User" as const
               };
               
               const { error: insertError } = await supabase
@@ -184,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .eq('id', data.user.id)
             .maybeSingle();
           
-          let userInfo;
+          let userInfo: User;
           
           if (userError || !userData) {
             console.log("User authenticated but not found in users table. Creating entry...");
@@ -193,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               id: data.user.id,
               email: data.user.email as string,
               name: data.user.email?.split('@')[0] || 'User',
-              role: "User" as "Admin" | "User"
+              role: "User" as const
             };
             
             const { error: insertError } = await supabase
@@ -211,7 +213,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               id: data.user.id,
               email: data.user.email as string,
               name: userData.name || data.user.email?.split('@')[0] || 'User',
-              role: userData.role as "Admin" | "User" || "User"
+              // Add a default "User" role if it's missing in the database
+              role: (userData.role as "Admin" | "User") || "User"
             };
           }
           
