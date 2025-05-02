@@ -75,7 +75,7 @@ const MainLayout = () => {
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <AiviaLogo className="size-10" />
-              {sidebarOpen && <span className="font-bold text-lg text-aivia-deep-purple dark:text-aivia-light-purple">AIVIA-MBox</span>}
+              {sidebarOpen && <span className="font-bold text-lg text-aivia-deep-purple dark:text-aivia-light-purple">MBox</span>}
             </div>
             <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
               <X className="size-5" />

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { LogOut, Upload, Trash } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -23,6 +23,7 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ onLogout }) => {
   const { toast } = useToast();
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Maximum file size: 1MB
   const MAX_FILE_SIZE = 1 * 1024 * 1024; 
@@ -37,6 +38,13 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ onLogout }) => {
     }
     
     return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
+  };
+  
+  const handleUploadClick = () => {
+    // Manually trigger the hidden file input
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
   
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,19 +128,17 @@ const ProfileAvatar: React.FC<ProfileAvatarProps> = ({ onLogout }) => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <label htmlFor="avatar-upload" className="flex w-full cursor-pointer items-center">
-            <Upload className="mr-2 size-4" />
-            <span>Upload photo</span>
-            <input 
-              id="avatar-upload" 
-              type="file" 
-              accept="image/*" 
-              className="hidden" 
-              onChange={handleAvatarUpload}
-              disabled={isUploading}
-            />
-          </label>
+        <DropdownMenuItem onClick={handleUploadClick}>
+          <Upload className="mr-2 size-4" />
+          <span>Upload photo</span>
+          <input 
+            ref={fileInputRef}
+            type="file" 
+            accept="image/*" 
+            className="hidden" 
+            onChange={handleAvatarUpload}
+            disabled={isUploading}
+          />
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={handleDeleteAvatar} 

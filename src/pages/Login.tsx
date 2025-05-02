@@ -35,7 +35,7 @@ const Login = () => {
           <div className="flex justify-center mb-2">
             <AiviaLogo className="size-32" />
           </div>
-          <CardTitle className="text-2xl font-bold text-center text-aivia-deep-purple dark:text-aivia-light-purple">AIVIA-MBox</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center text-aivia-deep-purple dark:text-aivia-light-purple">MBox</CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access your account
           </CardDescription>
