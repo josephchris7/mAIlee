@@ -64,8 +64,10 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				aivia: {
-					lavender: '#c0adf0',
-					gray: '#8f8d90',
+					'deep-purple': 'hsl(var(--deep-purple))',
+					'medium-purple': 'hsl(var(--medium-purple))',
+					'light-purple': 'hsl(var(--light-purple))',
+					'very-light-purple': 'hsl(var(--very-light-purple))',
 				},
 			},
 			borderRadius: {

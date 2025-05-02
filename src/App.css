@@ -7,3 +7,16 @@
   background-color: var(--background);
   color: var(--foreground);
 }
+
+/* Custom gradient backgrounds */
+.bg-aivia-gradient {
+  background: linear-gradient(135deg, 
+    hsl(var(--deep-purple)) 0%, 
+    hsl(var(--medium-purple)) 100%);
+}
+
+.bg-aivia-light-gradient {
+  background: linear-gradient(135deg, 
+    hsl(var(--light-purple)) 0%, 
+    hsl(var(--very-light-purple)) 100%);
+}

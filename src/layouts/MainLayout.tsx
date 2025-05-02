@@ -61,10 +61,10 @@ const MainLayout = () => {
   };
 
   return (
-    <div className="flex h-screen bg-lavender-50 dark:bg-mailgray-950">
+    <div className="flex h-screen bg-aivia-very-light-purple dark:bg-aivia-deep-purple">
       {/* Sidebar */}
       <aside 
-        className={`fixed md:relative z-20 h-full bg-white dark:bg-mailgray-900 shadow-md transition-all duration-300 ${
+        className={`fixed md:relative z-20 h-full bg-white dark:bg-aivia-deep-purple shadow-md transition-all duration-300 ${
           sidebarOpen ? "w-64" : "w-0 md:w-20"
         } overflow-hidden`}
       >
@@ -73,7 +73,7 @@ const MainLayout = () => {
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <AiviaLogo className="size-10" />
-              {sidebarOpen && <span className="font-bold text-lg text-aivia-lavender dark:text-aivia-lavender">AIVIA-MBox</span>}
+              {sidebarOpen && <span className="font-bold text-lg text-aivia-deep-purple dark:text-aivia-light-purple">AIVIA-MBox</span>}
             </div>
             <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
               <X className="size-5" />
@@ -84,13 +84,13 @@ const MainLayout = () => {
           <div className="px-3 py-2">
             <Button className={`
               ${sidebarOpen ? 'w-full' : 'w-14 h-14 rounded-full mx-auto'} 
-              bg-aivia-lavender hover:bg-aivia-lavender/80 text-white dark:text-primary-foreground flex items-center justify-center
+              bg-aivia-medium-purple hover:bg-aivia-deep-purple text-white dark:text-white flex items-center justify-center
             `}>
               {sidebarOpen ? 'Compose' : '+'}
             </Button>
           </div>
           
-          <Separator className="my-2 bg-aivia-lavender/20 dark:bg-aivia-lavender/10" />
+          <Separator className="my-2 bg-aivia-medium-purple/20 dark:bg-aivia-light-purple/10" />
           
           {/* Navigation */}
           <div className="flex-1 overflow-auto py-2">
@@ -108,8 +108,8 @@ const MainLayout = () => {
               
               {/* Admin section - only visible to admin users */}
               {isAdmin && sidebarOpen && (
-                <div className="pt-4 mt-4 border-t border-aivia-lavender/20 dark:border-aivia-lavender/10">
-                  <div className="text-xs uppercase text-aivia-gray dark:text-aivia-gray font-semibold px-4 mb-2">
+                <div className="pt-4 mt-4 border-t border-aivia-medium-purple/20 dark:border-aivia-light-purple/10">
+                  <div className="text-xs uppercase text-muted-foreground dark:text-muted-foreground font-semibold px-4 mb-2">
                     Admin
                   </div>
                   {adminItems.map((item) => (
@@ -132,12 +132,12 @@ const MainLayout = () => {
       {/* Main content */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white dark:bg-mailgray-900 shadow-sm flex items-center justify-between px-4 z-10">
+        <header className="h-16 bg-white dark:bg-aivia-deep-purple shadow-sm flex items-center justify-between px-4 z-10">
           <div className="flex items-center">
             <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden mr-2">
               <Menu className="size-5" />
             </Button>
-            <h1 className="text-xl font-semibold text-aivia-lavender dark:text-aivia-lavender">
+            <h1 className="text-xl font-semibold text-aivia-deep-purple dark:text-aivia-light-purple">
               {location.pathname.substring(1).charAt(0).toUpperCase() + location.pathname.substring(1).slice(1)}
             </h1>
           </div>
@@ -152,7 +152,7 @@ const MainLayout = () => {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto p-0 bg-lavender-50 dark:bg-mailgray-950">
+        <main className="flex-1 overflow-auto p-0 bg-aivia-very-light-purple dark:bg-aivia-deep-purple">
           <Outlet />
         </main>
       </div>
