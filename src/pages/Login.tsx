@@ -68,9 +68,6 @@ const Login = () => {
                   onChange={handleChange}
                   className="bg-white/50 dark:bg-aivia-deep-purple/30"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Try admin@aivia.com / admin123 (admin account)
-                </p>
               </div>
               <Button 
                 type="submit" 
