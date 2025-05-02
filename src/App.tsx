@@ -13,29 +13,34 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminGroups from "./pages/AdminGroups";
 import MainLayout from "./layouts/MainLayout";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route element={<MainLayout />}>
-            <Route path="/inbox" element={<Inbox />} />
-            <Route path="/sent" element={<Sent />} />
-            <Route path="/drafts" element={<Drafts />} />
-            <Route path="/important" element={<Inbox />} /> {/* Using Inbox as placeholder */}
-            <Route path="/all" element={<Inbox />} /> {/* Using Inbox as placeholder */}
-            <Route path="/trash" element={<Trash />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/groups" element={<AdminGroups />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+              <Route path="/inbox" element={<Inbox />} />
+              <Route path="/sent" element={<Sent />} />
+              <Route path="/drafts" element={<Drafts />} />
+              <Route path="/important" element={<Inbox />} /> {/* Using Inbox as placeholder */}
+              <Route path="/all" element={<Inbox />} /> {/* Using Inbox as placeholder */}
+              <Route path="/trash" element={<Trash />} />
+              <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+              <Route path="/admin/groups" element={<AdminRoute><AdminGroups /></AdminRoute>} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

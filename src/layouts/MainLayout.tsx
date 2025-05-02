@@ -27,12 +27,13 @@ import {
   User, 
   Users 
 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import AiviaLogo from "@/components/AiviaLogo";
 
 const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
+  const { user, logout, isAdmin } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
@@ -54,19 +55,10 @@ const MainLayout = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
-    
-    toast({
-      title: `${newTheme === 'dark' ? 'Dark' : 'Light'} mode activated`,
-      description: `Switched to ${newTheme} theme`,
-    });
   };
   
   const handleLogout = () => {
-    toast({
-      title: "Logged out",
-      description: "You have been logged out successfully",
-    });
-    navigate("/");
+    logout();
   };
   
   const toggleSidebar = () => {
@@ -89,14 +81,8 @@ const MainLayout = () => {
           {/* Logo */}
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="size-10 rounded-md bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="size-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m12 19-7-6 7-6" />
-                  <path d="M5 13h14" />
-                  <path d="M19 7v10" />
-                </svg>
-              </div>
-              {sidebarOpen && <span className="font-bold text-lg text-lavender-700 dark:text-lavender-300">AI MailBox</span>}
+              <AiviaLogo className="size-10" />
+              {sidebarOpen && <span className="font-bold text-lg text-lavender-700 dark:text-lavender-300">AIVIA-MBox</span>}
             </div>
             <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
               <X className="size-5" />
@@ -129,8 +115,8 @@ const MainLayout = () => {
                 </button>
               ))}
               
-              {/* Admin section */}
-              {sidebarOpen && (
+              {/* Admin section - only visible to admin users */}
+              {isAdmin && sidebarOpen && (
                 <div className="pt-4 mt-4 border-t border-lavender-100 dark:border-mailgray-800">
                   <div className="text-xs uppercase text-mailgray-500 dark:text-mailgray-400 font-semibold px-4 mb-2">
                     Admin
@@ -175,16 +161,18 @@ const MainLayout = () => {
                 <Button variant="ghost" className="relative size-9 rounded-full">
                   <Avatar className="size-9">
                     <AvatarImage src="/placeholder.svg" alt="User" />
-                    <AvatarFallback className="bg-lavender-200 text-lavender-700">AI</AvatarFallback>
+                    <AvatarFallback className="bg-lavender-200 text-lavender-700">
+                      {user?.name?.charAt(0) || 'U'}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">Admin User</p>
+                    <p className="text-sm font-medium leading-none">{user?.name}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      admin@aimail.example
+                      {user?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
