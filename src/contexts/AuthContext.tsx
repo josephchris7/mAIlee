@@ -49,12 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .maybeSingle();
               
             if (userData) {
+              // Use type assertion to handle potentially missing role
+              const userRole = userData.role as "Admin" | "User" | undefined;
+              
               setUser({
                 id: userData.id,
                 email: userData.email,
                 name: userData.name || sessionData.session.user.email?.split('@')[0] || 'User',
-                // Add a default "User" role if it's missing in the database
-                role: (userData.role as "Admin" | "User") || "User"
+                role: userRole || "User"
               });
             } else {
               console.log("No matching user found in users table. Creating one...");
@@ -101,12 +103,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .maybeSingle();
               
             if (userData) {
+              // Use type assertion to handle potentially missing role
+              const userRole = userData.role as "Admin" | "User" | undefined;
+              
               setUser({
                 id: userData.id,
                 email: userData.email,
                 name: userData.name || session.user.email?.split('@')[0] || 'User',
-                // Add a default "User" role if it's missing in the database
-                role: (userData.role as "Admin" | "User") || "User"
+                role: userRole || "User"
               });
             } else {
               console.log("No matching user found in users table during auth change. Creating one...");
@@ -209,12 +213,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             userInfo = newUser;
           } else {
+            // Use type assertion to handle potentially missing role
+            const userRole = userData.role as "Admin" | "User" | undefined;
+            
             userInfo = {
               id: data.user.id,
               email: data.user.email as string,
               name: userData.name || data.user.email?.split('@')[0] || 'User',
-              // Add a default "User" role if it's missing in the database
-              role: (userData.role as "Admin" | "User") || "User"
+              role: userRole || "User"
             };
           }
           
